@@ -736,17 +736,20 @@ class ConnectionService : Service() {
 
     private fun listSharedFiles(path: String, ws: WebSocket) {
         val parts = normalizeRelativePath(path) ?: run { sendError("Invalid file path"); return }
-        var folder = sharedTree()
-        if (folder == null) {
+        var folder: DocumentFile = sharedTree() ?: run {
             sendError("No folder has been approved for file sharing")
             return
         }
         for (part in parts) {
-            folder = folder.findFile(part)
-            if (folder == null || !folder.isDirectory) {
+            val nextFolder: DocumentFile = folder.findFile(part) ?: run {
                 sendError("Folder not found in approved area")
                 return
             }
+            if (!nextFolder.isDirectory) {
+                sendError("Folder not found in approved area")
+                return
+            }
+            folder = nextFolder
         }
         val entries = folder.listFiles().map { file ->
             JSONObject()
